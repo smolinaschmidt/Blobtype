@@ -26,7 +26,6 @@
             overflow: hidden;
         }
 
-        /* Sidebar Control Panel */
         #controls {
             width: 320px;
             background-color: var(--panel-bg);
@@ -106,7 +105,6 @@
             font-weight: 700;
         }
 
-        /* Canvas Preview Area */
         #display {
             flex-grow: 1;
             display: flex;
@@ -135,6 +133,38 @@
         .checkbox-row input {
             accent-color: var(--accent-color);
             cursor: pointer;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-btn {
+            background: var(--accent-color);
+            color: #000;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            box-sizing: border-box;
+            transition: opacity 0.2s;
+        }
+
+        .file-upload-btn:hover {
+            opacity: 0.8;
+        }
+
+        .file-upload-btn:active {
+            opacity: 0.7;
+        }
+
+        .upload-status {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 4px;
         }
     </style>
 </head>
@@ -166,7 +196,11 @@
                 <option value="Space Grotesk">Space Grotesk</option>
                 <option value="Syne">Syne</option>
                 <option value="Unbounded">Unbounded</option>
+                <option id="customFontOption" style="display: none;"></option>
             </select>
+            <input type="file" id="fontUpload" accept=".woff2,.woff,.otf,.ttf">
+            <button class="file-upload-btn" onclick="document.getElementById('fontUpload').click()">+ Upload Font</button>
+            <div class="upload-status" id="uploadStatus"></div>
         </div>
 
         <div class="control-group">
@@ -350,11 +384,9 @@
             const width = canvas.width;
             const height = canvas.height;
 
-            // 1. Clear with deep black
             ctx.fillStyle = '#000000';
             ctx.fillRect(0, 0, width, height);
 
-            // 2. Draw Text with CSS Blur filter applied directly to canvas operations
             ctx.save();
             const blurProgress = parseFloat(blurInput.value);
             const blurVal = mapBlur(blurProgress);
@@ -362,7 +394,7 @@
                 ctx.filter = `blur(${blurVal}px)`;
             }
             
-            ctx.fillStyle = '#ffffff'; // Draw pure white text first (to process luminosity)
+            ctx.fillStyle = '#ffffff'; 
             const requestedSize = parseInt(fontSizeInput.value, 10);
             const family = fontFamilyInput.value;
             const lineHeightRatio = parseFloat(lineHeightInput.value);
@@ -384,11 +416,9 @@
             });
             ctx.restore();
 
-            // 3. Process image data into customized grid halftones with Thresholding
             const imgData = ctx.getImageData(0, 0, width, height);
             const data = imgData.data;
             
-            // Clear canvas to rebuild it dot by dot
             ctx.fillStyle = '#000000';
             ctx.fillRect(0, 0, width, height);
 
@@ -400,18 +430,15 @@
 
             ctx.fillStyle = `rgb(${targetColor.r}, ${targetColor.g}, ${targetColor.b})`;
 
-            // Step through pixel grid
             for (let y = 0; y < height; y += grid) {
                 for (let x = 0; x < width; x += grid) {
                     
-                    // Calculate average brightness in this grid block
                     let totalBrightness = 0;
                     let count = 0;
 
                     for (let cy = 0; cy < grid && (y + cy) < height; cy++) {
                         for (let cx = 0; cx < grid && (x + cx) < width; cx++) {
                             const pixelIndex = ((y + cy) * width + (x + cx)) * 4;
-                            // White text means R, G, and B are equal brightness values
                             totalBrightness += data[pixelIndex]; 
                             count++;
                         }
@@ -419,9 +446,7 @@
 
                     const avgBrightness = totalBrightness / count;
 
-                    // Threshold cutoff: if bright enough, draw dynamic blob or perfect circle
                     if (avgBrightness > thresh) {
-                        // Dynamic dot radius mapped to brightness values
                         const factor = (avgBrightness / 255);
                         const radius = (grid / 2) * Math.min(1.4, factor * 1.5); 
                         
@@ -433,7 +458,6 @@
             }
         }
 
-        // Attach Event Listeners for real-time changes
         [
             textInput, fontFamilyInput, fontSizeInput,
             lineHeightInput, letterSpacingInput, uppercaseToggle, fitTextToggle,
@@ -449,7 +473,76 @@
             });
         });
 
-        // Initial render on load
+        const fontUploadInput = document.getElementById('fontUpload');
+        const uploadStatus = document.getElementById('uploadStatus');
+        let customFontName = null;
+
+        fontUploadInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const fileName = file.name.split('.')[0];
+            const reader = new FileReader();
+
+            reader.onload = function(event) {
+                try {
+                    const fontData = event.target.result;
+                    const fontBlob = new Blob([fontData]);
+                    const fontUrl = URL.createObjectURL(fontBlob);
+                    const fontFormat = file.name.split('.').pop().toLowerCase();
+                    const formatMap = {
+                        'woff2': 'woff2',
+                        'woff': 'woff',
+                        'ttf': 'truetype',
+                        'otf': 'opentype'
+                    };
+                    const format = formatMap[fontFormat] || 'truetype';
+
+                    const fontFace = new FontFace(fileName, `url(${fontUrl})`, {
+                        style: 'normal',
+                        weight: '700'
+                    });
+
+                    fontFace.load().then(function(loadedFont) {
+                        document.fonts.add(loadedFont);
+                        customFontName = fileName;
+
+                        const customOption = document.getElementById('customFontOption');
+                        customOption.value = fileName;
+                        customOption.textContent = `${fileName} (Custom)`;
+                        customOption.style.display = 'block';
+
+                        fontFamilyInput.value = fileName;
+                        uploadStatus.textContent = `✓ Tipografía "${fileName}" cargada`;
+                        uploadStatus.style.color = '#4CAF50';
+
+                        updateValueBadges();
+                        draw();
+
+                        fontUploadInput.value = '';
+                    }).catch(function(error) {
+                        console.error('Error loading font:', error);
+                        uploadStatus.textContent = '✗ Error al cargar la tipografía';
+                        uploadStatus.style.color = '#ff6b6b';
+                        fontUploadInput.value = '';
+                    });
+                } catch (error) {
+                    console.error('Error processing font file:', error);
+                    uploadStatus.textContent = '✗ Error al procesar el archivo';
+                    uploadStatus.style.color = '#ff6b6b';
+                    fontUploadInput.value = '';
+                }
+            };
+
+            reader.onerror = function() {
+                uploadStatus.textContent = '✗ Error al leer el archivo';
+                uploadStatus.style.color = '#ff6b6b';
+                fontUploadInput.value = '';
+            };
+
+            reader.readAsArrayBuffer(file);
+        });
+
         window.onload = () => {
             canvas.width = CANVAS_WIDTH;
             canvas.height = CANVAS_HEIGHT;
