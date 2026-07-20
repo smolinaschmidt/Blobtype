@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blob Halftone Playground</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Bebas+Neue&family=Inter:wght@100..900&family=Montserrat:wght@100..900&family=Nunito:wght@200..1000&family=Oswald:wght@200..700&family=Playfair+Display:wght@400..900&family=Roboto+Condensed:wght@100..900&family=Rubik:wght@300..900&family=Space+Grotesk:wght@300..700&family=Syne:wght@400..800&family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: #0d0d0d;
@@ -59,14 +62,28 @@
             font-weight: 500;
         }
 
-        input[type="text"] {
+        input[type="text"],
+        select,
+        textarea {
             background: #2b2b2b;
             border: 1px solid #444;
             color: #fff;
             padding: 10px;
             border-radius: 4px;
-            font-size: 1rem;
-            font-weight: bold;
+            font-size: 0.95rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            min-height: 72px;
+            resize: vertical;
+            font-family: inherit;
+            line-height: 1.35;
+        }
+
+        select {
+            cursor: pointer;
         }
 
         input[type="range"] {
@@ -89,44 +106,6 @@
             font-weight: 700;
         }
 
-        #playBtn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            width: 100%;
-            padding: 14px 20px;
-            margin-top: 10px;
-            background: var(--accent-color);
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            font-size: 0.95rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-        }
-
-        #playBtn:hover {
-            background: #3344ff;
-        }
-
-        #playBtn:active {
-            transform: scale(0.98);
-        }
-
-        #playBtn.playing {
-            background: #333;
-            border: 1px solid #555;
-        }
-
-        #playBtn .icon {
-            font-size: 1.1rem;
-            line-height: 1;
-        }
-
         /* Canvas Preview Area */
         #display {
             flex-grow: 1;
@@ -138,10 +117,24 @@
         }
 
         canvas {
-            max-width: 90%;
-            max-height: 90%;
+            max-width: 96%;
+            max-height: 96%;
             box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             background: #000;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: #aaa;
+            cursor: pointer;
+        }
+
+        .checkbox-row input {
+            accent-color: var(--accent-color);
+            cursor: pointer;
         }
     </style>
 </head>
@@ -151,17 +144,58 @@
         <h2>Blob Generator</h2>
         
         <div class="control-group">
-            <label for="textInput">Text (Use \n for new line)</label>
-            <input type="text" id="textInput" value="Type\nsomething">
+            <label for="textInput">Text (use \n for line breaks)</label>
+            <textarea id="textInput">Type\nsomething</textarea>
         </div>
 
         <div class="control-group">
-            <label for="fontSize">Font Size</label>
-            <input type="range" id="fontSize" min="40" max="200" value="120">
+            <label for="fontFamily">Typeface</label>
+            <select id="fontFamily">
+                <option value="Anton">Anton</option>
+                <option value="Archivo Black">Archivo Black</option>
+                <option value="Arial Black">Arial Black</option>
+                <option value="Bebas Neue">Bebas Neue</option>
+                <option value="Impact">Impact</option>
+                <option value="Inter">Inter</option>
+                <option value="Montserrat">Montserrat</option>
+                <option value="Nunito">Nunito</option>
+                <option value="Oswald">Oswald</option>
+                <option value="Playfair Display">Playfair Display</option>
+                <option value="Roboto Condensed">Roboto Condensed</option>
+                <option value="Rubik">Rubik</option>
+                <option value="Space Grotesk">Space Grotesk</option>
+                <option value="Syne">Syne</option>
+                <option value="Unbounded">Unbounded</option>
+            </select>
         </div>
 
         <div class="control-group">
-            <label for="blurAmount">Liquid Blur (Stage Transition) <span class="value-badge" id="blurValue">30</span></label>
+            <label for="fontSize">Size <span class="value-badge" id="fontSizeValue">120</span></label>
+            <input type="range" id="fontSize" min="24" max="400" value="120">
+        </div>
+
+        <div class="control-group">
+            <label for="lineHeight">Line Height <span class="value-badge" id="lineHeightValue">0.95</span></label>
+            <input type="range" id="lineHeight" min="0.7" max="1.6" step="0.05" value="0.95">
+        </div>
+
+        <div class="control-group">
+            <label for="letterSpacing">Tracking <span class="value-badge" id="letterSpacingValue">0.0</span></label>
+            <input type="range" id="letterSpacing" min="-10" max="40" step="0.1" value="0">
+        </div>
+
+        <label class="checkbox-row">
+            <input type="checkbox" id="uppercaseToggle" checked>
+            Uppercase
+        </label>
+
+        <label class="checkbox-row">
+            <input type="checkbox" id="fitTextToggle" checked>
+            Fit text to canvas
+        </label>
+
+        <div class="control-group">
+            <label for="blurAmount">Liquid Blur <span class="value-badge" id="blurValue">30</span></label>
             <input type="range" id="blurAmount" min="0" max="100" value="30" step="1">
         </div>
 
@@ -177,17 +211,12 @@
 
         <div class="control-group">
             <label for="colorPicker">Ink Color</label>
-            <input type="color" id="colorPicker" value="#ff007f">
+            <input type="color" id="colorPicker" value="#ffffff">
         </div>
-
-        <button type="button" id="playBtn">
-            <span class="icon">▶</span>
-            <span class="label">Play Animation</span>
-        </button>
     </div>
 
     <div id="display">
-        <canvas id="sandboxCanvas" width="800" height="1000"></canvas>
+        <canvas id="sandboxCanvas" width="1200" height="1500"></canvas>
     </div>
 
     <script>
@@ -196,24 +225,27 @@
 
         // DOM Elements
         const textInput = document.getElementById('textInput');
+        const fontFamilyInput = document.getElementById('fontFamily');
         const fontSizeInput = document.getElementById('fontSize');
+        const lineHeightInput = document.getElementById('lineHeight');
+        const letterSpacingInput = document.getElementById('letterSpacing');
+        const uppercaseToggle = document.getElementById('uppercaseToggle');
+        const fitTextToggle = document.getElementById('fitTextToggle');
         const blurInput = document.getElementById('blurAmount');
         const dotSizeInput = document.getElementById('dotSize');
         const thresholdInput = document.getElementById('threshold');
         const colorPicker = document.getElementById('colorPicker');
-        const playBtn = document.getElementById('playBtn');
         const blurValue = document.getElementById('blurValue');
         const dotSizeValue = document.getElementById('dotSizeValue');
         const thresholdValue = document.getElementById('thresholdValue');
+        const fontSizeValue = document.getElementById('fontSizeValue');
+        const lineHeightValue = document.getElementById('lineHeightValue');
+        const letterSpacingValue = document.getElementById('letterSpacingValue');
 
-        let isAnimating = false;
-        let animationId = null;
-        let animationStart = 0;
-        let textOffsetX = 0;
-        let textOffsetY = 0;
-        let savedValues = null;
-
-        const ANIMATION_DURATION = 4000;
+        const CANVAS_WIDTH = 1200;
+        const CANVAS_HEIGHT = 1500;
+        const TEXT_PADDING = 80;
+        const DEFAULT_FONT_WEIGHT = 700;
 
         function mapBlur(progress) {
             return (progress / 100) * 40;
@@ -231,13 +263,78 @@
             blurValue.textContent = blurInput.value;
             dotSizeValue.textContent = dotSizeInput.value;
             thresholdValue.textContent = thresholdInput.value;
+            fontSizeValue.textContent = fontSizeInput.value;
+            lineHeightValue.textContent = parseFloat(lineHeightInput.value).toFixed(2);
+            letterSpacingValue.textContent = parseFloat(letterSpacingInput.value).toFixed(1);
         }
 
-        function setAnimatedValues(progress) {
-            blurInput.value = progress;
-            dotSizeInput.value = progress;
-            thresholdInput.value = progress;
-            updateValueBadges();
+        function getDisplayLines() {
+            const raw = textInput.value.replace(/\\n/g, '\n');
+            return uppercaseToggle.checked
+                ? raw.split('\n').map((line) => line.toUpperCase())
+                : raw.split('\n');
+        }
+
+        function buildFontString(size, family) {
+            return `${DEFAULT_FONT_WEIGHT} ${size}px "${family}", sans-serif`;
+        }
+
+        function measureLineWidth(line, size, family, tracking) {
+            ctx.font = buildFontString(size, family);
+            let width = ctx.measureText(line).width;
+            if (Math.abs(tracking) >= 0.05 && line.length > 1) {
+                width += tracking * (line.length - 1);
+            }
+            return width;
+        }
+
+        function getEffectiveFontSize(lines, requestedSize, family, lineHeightRatio, tracking) {
+            if (!fitTextToggle.checked || lines.length === 0) {
+                return requestedSize;
+            }
+
+            const maxW = CANVAS_WIDTH - TEXT_PADDING * 2;
+            const maxH = CANVAS_HEIGHT - TEXT_PADDING * 2;
+            let size = requestedSize;
+
+            for (let attempt = 0; attempt < 12; attempt++) {
+                let widest = 0;
+                lines.forEach((line) => {
+                    widest = Math.max(widest, measureLineWidth(line, size, family, tracking));
+                });
+                const totalHeight = lines.length * size * lineHeightRatio;
+                const scaleW = widest > maxW ? maxW / widest : 1;
+                const scaleH = totalHeight > maxH ? maxH / totalHeight : 1;
+                const scale = Math.min(scaleW, scaleH, 1);
+
+                if (scale >= 0.999) {
+                    return size;
+                }
+                size = Math.max(12, size * scale);
+            }
+
+            return size;
+        }
+
+        function drawLineText(line, x, y, tracking) {
+            if (Math.abs(tracking) < 0.05) {
+                ctx.fillText(line, x, y);
+                return;
+            }
+
+            const chars = [...line];
+            const charWidths = chars.map((char) => ctx.measureText(char).width);
+            const totalWidth = charWidths.reduce((sum, width, index) => {
+                return sum + width + (index < chars.length - 1 ? tracking : 0);
+            }, 0);
+
+            ctx.textAlign = 'left';
+            let cursorX = x - totalWidth / 2;
+            chars.forEach((char, index) => {
+                ctx.fillText(char, cursorX, y);
+                cursorX += charWidths[index] + (index < chars.length - 1 ? tracking : 0);
+            });
+            ctx.textAlign = 'center';
         }
 
         function hexToRgb(hex) {
@@ -246,7 +343,7 @@
                 r: parseInt(result[1], 16),
                 g: parseInt(result[2], 16),
                 b: parseInt(result[3], 16)
-            } : { r: 255, g: 0, b: 127 };
+            } : { r: 255, g: 255, b: 255 };
         }
 
         function draw() {
@@ -266,19 +363,23 @@
             }
             
             ctx.fillStyle = '#ffffff'; // Draw pure white text first (to process luminosity)
-            const fSize = parseInt(fontSizeInput.value);
-            ctx.font = `900 ${fSize}px "Arial Black", Impact, sans-serif`;
+            const requestedSize = parseInt(fontSizeInput.value, 10);
+            const family = fontFamilyInput.value;
+            const lineHeightRatio = parseFloat(lineHeightInput.value);
+            const tracking = parseFloat(letterSpacingInput.value);
+            const lines = getDisplayLines();
+            const fSize = getEffectiveFontSize(lines, requestedSize, family, lineHeightRatio, tracking);
+
+            ctx.font = buildFontString(fSize, family);
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            // Split lines by "\n"
-            const lines = textInput.value.replace(/\\n/g, '\n').split('\n');
-            const lineHeight = fSize * 0.95;
+            const lineHeight = fSize * lineHeightRatio;
             const totalHeight = lines.length * lineHeight;
             let startY = (height - totalHeight) / 2 + lineHeight / 2;
 
             lines.forEach((line) => {
-                ctx.fillText(line.toUpperCase(), width / 2 + textOffsetX, startY + textOffsetY);
+                drawLineText(line, width / 2, startY, tracking);
                 startY += lineHeight;
             });
             ctx.restore();
@@ -332,93 +433,26 @@
             }
         }
 
-        function easeInOutCubic(t) {
-            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-        }
-
-        function animate(timestamp) {
-            if (!animationStart) animationStart = timestamp;
-            const elapsed = timestamp - animationStart;
-            const rawProgress = Math.min(elapsed / ANIMATION_DURATION, 1);
-            const progress = easeInOutCubic(rawProgress) * 100;
-
-            setAnimatedValues(Math.round(progress));
-
-            const wave = rawProgress * Math.PI * 2;
-            textOffsetX = Math.sin(wave) * 30 * rawProgress;
-            textOffsetY = Math.cos(wave * 0.8) * 20 * rawProgress;
-
-            draw();
-
-            if (rawProgress < 1) {
-                animationId = requestAnimationFrame(animate);
-            } else {
-                stopAnimation(false);
-            }
-        }
-
-        function startAnimation() {
-            savedValues = {
-                blur: blurInput.value,
-                dotSize: dotSizeInput.value,
-                threshold: thresholdInput.value
-            };
-
-            isAnimating = true;
-            animationStart = 0;
-            textOffsetX = 0;
-            textOffsetY = 0;
-
-            setAnimatedValues(0);
-            playBtn.classList.add('playing');
-            playBtn.querySelector('.icon').textContent = '■';
-            playBtn.querySelector('.label').textContent = 'Stop';
-
-            animationId = requestAnimationFrame(animate);
-        }
-
-        function stopAnimation(restore = true) {
-            isAnimating = false;
-            if (animationId) {
-                cancelAnimationFrame(animationId);
-                animationId = null;
-            }
-            animationStart = 0;
-            textOffsetX = 0;
-            textOffsetY = 0;
-
-            if (restore && savedValues) {
-                blurInput.value = savedValues.blur;
-                dotSizeInput.value = savedValues.dotSize;
-                thresholdInput.value = savedValues.threshold;
-                updateValueBadges();
-            }
-
-            savedValues = null;
-            playBtn.classList.remove('playing');
-            playBtn.querySelector('.icon').textContent = '▶';
-            playBtn.querySelector('.label').textContent = 'Play Animation';
-            draw();
-        }
-
-        playBtn.addEventListener('click', () => {
-            if (isAnimating) {
-                stopAnimation(true);
-            } else {
-                startAnimation();
-            }
-        });
-
         // Attach Event Listeners for real-time changes
-        [textInput, fontSizeInput, blurInput, dotSizeInput, thresholdInput, colorPicker].forEach(element => {
+        [
+            textInput, fontFamilyInput, fontSizeInput,
+            lineHeightInput, letterSpacingInput, uppercaseToggle, fitTextToggle,
+            blurInput, dotSizeInput, thresholdInput, colorPicker
+        ].forEach(element => {
             element.addEventListener('input', () => {
                 updateValueBadges();
-                if (!isAnimating) draw();
+                draw();
+            });
+            element.addEventListener('change', () => {
+                updateValueBadges();
+                draw();
             });
         });
 
         // Initial render on load
         window.onload = () => {
+            canvas.width = CANVAS_WIDTH;
+            canvas.height = CANVAS_HEIGHT;
             updateValueBadges();
             draw();
         };
